@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Business Management System v2.0</title>
+    <title>Business Management System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
@@ -71,7 +68,8 @@
         .btn-danger { background: #dc3545; }
         .btn-info { background: #17a2b8; }
         
-        .item-card, .product-card, .sale-card { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #667eea; }
+        .item-card, .product-card, .sale-card, .expense-card { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid #667eea; }
+        .expense-card { border-left-color: #dc3545; }
         .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .item-name { font-size: 1.2em; font-weight: 600; color: #212529; }
         .item-price { font-size: 1.3em; color: #667eea; font-weight: 700; }
@@ -111,6 +109,18 @@
         .config-banner { background: #fff3cd; color: #856404; padding: 15px 30px; text-align: center; border-bottom: 2px solid #ffc107; }
         .config-banner.success { background: #d4edda; color: #155724; border-bottom-color: #28a745; }
         .config-banner a { color: #0066cc; text-decoration: underline; cursor: pointer; }
+        
+        .date-badge { display: inline-block; background: #6c757d; color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; margin-top: 5px; }
+        .filter-section { background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .table-container { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background: #f8f9fa; font-weight: 600; color: #495057; }
+        tr:hover { background: #f8f9fa; }
+        .profit-card { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; }
+        .profit-value { font-size: 3em; font-weight: 700; margin: 15px 0; }
+        .stock-status { font-size: 14px; color: #6c757d; margin-top: 5px; }
+        .stock-low { color: #dc3545; font-weight: 600; }
         
         /* Modal */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto; }
@@ -186,9 +196,8 @@
     <!-- Home -->
     <div id="home-page" class="home-page">
         <div class="home-content">
-            <h1>💼 A&K Creations</h1>
+            <h1>💼 Business Manager</h1>
             <p>Complete Inventory & Sales System</p>
-            <p style="font-size: 0.8em; opacity: 0.7; margin-top: 10px;">v2.0 - Updated</p>
             <button class="home-btn" onclick="showCatalog()">View Products</button>
             <br>
             <button class="home-btn" onclick="showLogin()" style="background: rgba(255,255,255,0.2); color: white;">🔐 Staff Login</button>
@@ -242,7 +251,7 @@
         </div>
     </div>
 
-    <!-- App -->
+    <!-- App Container -->
     <div id="app-container" class="app-container">
         <div class="container">
             <div class="header">
@@ -263,27 +272,21 @@
                 ⚠️ Firebase not configured. <a onclick="openSetupModal()">Setup cloud sync</a>
             </div>
 
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('dashboard')">🏠 Dashboard</div>
-                <div class="tab" onclick="switchTab('items')" id="items-tab-btn" style="display: none;">📦 Items</div>
-                <div class="tab" onclick="switchTab('products')">🛍️ Products</div>
-                <div class="tab" onclick="switchTab('sales')">📈 Sales</div>
-                <div class="tab" onclick="switchTab('earnings')">💰 Earnings</div>
-                <div class="tab" onclick="switchTab('inventory')">📊 Inventory</div>
-                <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
-            </div>
+            <!-- Dynamic Tabs (will be populated based on role) -->
+            <div id="tabs-container" class="tabs"></div>
 
-            <!-- Dashboard -->
-            <div id="dashboard-tab" class="tab-content active">
+            <!-- ADMIN TABS -->
+            <div id="dashboard-tab" class="tab-content">
                 <h2>Dashboard</h2>
                 <div class="stats-grid" id="dashboard-stats"></div>
                 <h3 style="margin-top: 30px;">Recent Activity</h3>
                 <div id="recent-activity"></div>
             </div>
 
-            <!-- Items (Admin Only) -->
             <div id="items-tab" class="tab-content">
                 <h2>Item Master List (Admin Only)</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Define your items with selling prices (price per unit you charge customers)</p>
+                
                 <form id="item-form" onsubmit="addItem(event)">
                     <div class="three-column">
                         <div class="form-group">
@@ -326,7 +329,57 @@
                 <div id="items-list"></div>
             </div>
 
-            <!-- Products -->
+            <div id="expenses-tab" class="tab-content">
+                <h2>Record Expenses</h2>
+                <p style="color: #6c757d; margin-bottom: 20px;">Track actual purchases and costs of items</p>
+                
+                <form id="expense-form" onsubmit="addExpense(event)">
+                    <div class="three-column">
+                        <div class="form-group">
+                            <label>Date *</label>
+                            <input type="date" id="expense-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Item *</label>
+                            <select id="expense-item" required>
+                                <option value="">Choose an item...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity Purchased *</label>
+                            <input type="number" id="expense-quantity" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="three-column">
+                        <div class="form-group">
+                            <label>Cost Paid (₱) *</label>
+                            <input type="number" id="expense-cost" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <input type="text" id="expense-supplier">
+                        </div>
+                        <div class="form-group">
+                            <label>Notes</label>
+                            <input type="text" id="expense-notes">
+                        </div>
+                    </div>
+                    <button type="submit">Record Expense</button>
+                </form>
+
+                <div class="section-header">
+                    <h2>Expense History</h2>
+                    <select id="expense-filter" onchange="filterExpenses()">
+                        <option value="all">All</option>
+                        <option value="today">Today</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                    </select>
+                </div>
+                <div id="expenses-list"></div>
+            </div>
+
+            <!-- USER & ADMIN TABS -->
             <div id="products-tab" class="tab-content">
                 <h2>Create Product</h2>
                 <form id="product-form" onsubmit="addProduct(event)">
@@ -363,7 +416,6 @@
                 <div id="products-list"></div>
             </div>
 
-            <!-- Sales -->
             <div id="sales-tab" class="tab-content">
                 <h2>Record Sale</h2>
                 <form id="sale-form" onsubmit="recordSale(event)">
@@ -415,7 +467,6 @@
                 <div id="sales-list"></div>
             </div>
 
-            <!-- Earnings -->
             <div id="earnings-tab" class="tab-content">
                 <h2>💰 My Earnings</h2>
                 <div class="info-box">
@@ -437,13 +488,71 @@
                 <button onclick="window.print()" class="btn-info" style="margin-top: 20px;">🖨️ Print Report</button>
             </div>
 
-            <!-- Inventory -->
+            <!-- ADMIN ONLY TABS -->
+            <div id="profit-tab" class="tab-content">
+                <h2>Profit Analysis</h2>
+                <div class="filter-section">
+                    <label>Filter Period:</label>
+                    <select id="profit-filter" onchange="calculateProfit()">
+                        <option value="all">All</option>
+                        <option value="today">Today</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                    </select>
+                </div>
+                <div id="profit-summary"></div>
+                <div id="profit-details"></div>
+            </div>
+
+            <div id="labor-tab" class="tab-content">
+                <h2>Labor Analysis</h2>
+                <div class="filter-section">
+                    <label>Filter Period:</label>
+                    <select id="labor-filter" onchange="calculateLabor()">
+                        <option value="all">All</option>
+                        <option value="today">Today</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                    </select>
+                </div>
+                <div id="labor-summary"></div>
+                <div id="labor-details"></div>
+            </div>
+
             <div id="inventory-tab" class="tab-content">
                 <h2>📊 Inventory</h2>
                 <div id="inventory-list"></div>
             </div>
 
-            <!-- Settings -->
+            <div id="reports-tab" class="tab-content">
+                <h2>Business Reports</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-total-items">0</div>
+                        <div class="stat-label">Total Items</div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-value" id="report-total-products">0</div>
+                        <div class="stat-label">Total Products</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-value" id="report-total-expenses">₱0</div>
+                        <div class="stat-label">Total Expenses</div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-value" id="report-total-sales">₱0</div>
+                        <div class="stat-label">Total Sales</div>
+                    </div>
+                </div>
+                <h3>Quick Actions</h3>
+                <div style="margin-top: 20px;">
+                    <button onclick="exportData()">📥 Export Data</button>
+                    <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="margin-left: 10px;">📤 Import Data</button>
+                    <button class="btn-info" onclick="window.print()" style="margin-left: 10px;">🖨️ Print Report</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                </div>
+            </div>
+
             <div id="settings-tab" class="tab-content">
                 <h2>Settings</h2>
                 <div class="info-box">
@@ -505,16 +614,20 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <script>
-        let db=null,firebaseInitialized=false,currentUser=null;
+        let db = null;
+        let firebaseInitialized = false;
+        let currentUser = null;
+        let unsubscribeItems = null;
+        let unsubscribeProducts = null;
+        let unsubscribeSales = null;
+        let unsubscribeExpenses = null;
         
-        // Initialize default users
         function initializeDefaultUsers() {
             const storedUsers = localStorage.getItem('users');
             if (!storedUsers) {
-                // First time - create default users
                 const defaultUsers = [
-                    {username:'admin',password:'admin123',role:'admin',createdAt:new Date().toISOString()},
-                    {username:'user',password:'user123',role:'user',createdAt:new Date().toISOString()}
+                    {username: 'admin', password: 'admin123', role: 'admin', createdAt: new Date().toISOString()},
+                    {username: 'user', password: 'user123', role: 'user', createdAt: new Date().toISOString()}
                 ];
                 localStorage.setItem('users', JSON.stringify(defaultUsers));
                 return defaultUsers;
@@ -523,119 +636,1088 @@
         }
         
         let users = initializeDefaultUsers();
-        let items=[],products=[],sales=[];
+        let items = [];
+        let products = [];
+        let sales = [];
+        let expenses = [];
 
-        document.addEventListener('DOMContentLoaded',()=>{
-            // Make sure users are initialized
+        document.addEventListener('DOMContentLoaded', () => {
             users = initializeDefaultUsers();
-            
-            // Auto-configure Firebase if not already configured
-            const existingConfig = localStorage.getItem('firebaseConfig');
-            if (!existingConfig) {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyBXxxbX2NjGTJFQARUsNbMZzdhFri5Gl8c",
-                    authDomain: "a-k-creations-1a596.firebaseapp.com",
-                    projectId: "a-k-creations-1a596",
-                    storageBucket: "a-k-creations-1a596.firebasestorage.app",
-                    messagingSenderId: "328290107354",
-                    appId: "1:328290107354:web:df31cf20581b196a7f0ae3"
-                };
-                localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
-                initializeFirebase(firebaseConfig);
-            } else {
-                loadFirebaseConfig();
-            }
+            loadLocalData();
+            loadFirebaseConfig();
             checkSession();
-            document.getElementById('sale-date').valueAsDate=new Date();
+            document.getElementById('sale-date').valueAsDate = new Date();
+            document.getElementById('expense-date').valueAsDate = new Date();
         });
 
-        function showHome(){document.getElementById('home-page').style.display='flex';document.getElementById('catalog-page').style.display='none';document.getElementById('login-page').style.display='none';document.getElementById('app-container').style.display='none';}
-        function showCatalog(){document.getElementById('home-page').style.display='none';document.getElementById('catalog-page').style.display='block';document.getElementById('login-page').style.display='none';document.getElementById('app-container').style.display='none';loadLocalData();renderCatalog();}
-        function showLogin(){document.getElementById('home-page').style.display='none';document.getElementById('catalog-page').style.display='none';document.getElementById('login-page').style.display='flex';document.getElementById('app-container').style.display='none';}
-        function showApp(){document.getElementById('home-page').style.display='none';document.getElementById('catalog-page').style.display='none';document.getElementById('login-page').style.display='none';document.getElementById('app-container').style.display='block';document.getElementById('current-user-display').textContent='👤 '+currentUser.username;document.getElementById('user-role-badge').textContent=currentUser.role;document.getElementById('settings-username').textContent=currentUser.username;document.getElementById('settings-role').textContent=currentUser.role;if(currentUser.role==='admin'){document.getElementById('admin-section').style.display='block';document.getElementById('items-tab-btn').style.display='block';renderUsersList();}else{document.getElementById('admin-section').style.display='none';document.getElementById('items-tab-btn').style.display='none';}loadLocalData();updateSKUFields();renderAll();updateDashboard();calculateEarnings();}
+        function showHome() {
+            document.getElementById('home-page').style.display = 'flex';
+            document.getElementById('catalog-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('app-container').style.display = 'none';
+        }
+        
+        function showCatalog() {
+            document.getElementById('home-page').style.display = 'none';
+            document.getElementById('catalog-page').style.display = 'block';
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('app-container').style.display = 'none';
+            loadLocalData();
+            renderCatalog();
+        }
+        
+        function showLogin() {
+            document.getElementById('home-page').style.display = 'none';
+            document.getElementById('catalog-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+        }
+        
+        function showApp() {
+            document.getElementById('home-page').style.display = 'none';
+            document.getElementById('catalog-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('app-container').style.display = 'block';
+            
+            document.getElementById('current-user-display').textContent = '👤 ' + currentUser.username;
+            document.getElementById('user-role-badge').textContent = currentUser.role;
+            document.getElementById('settings-username').textContent = currentUser.username;
+            document.getElementById('settings-role').textContent = currentUser.role;
+            
+            // Setup tabs based on role
+            setupTabs();
+            
+            if (currentUser.role === 'admin') {
+                document.getElementById('admin-section').style.display = 'block';
+                renderUsersList();
+            } else {
+                document.getElementById('admin-section').style.display = 'none';
+            }
+            
+            loadLocalData();
+            
+            if (firebaseInitialized) {
+                setupRealtimeSync();
+            }
+            
+            updateSKUFields();
+            renderAll();
+            updateDashboard();
+            calculateEarnings();
+            calculateProfit();
+            calculateLabor();
+            updateInventory();
+            updateReports();
+        }
 
-        function loadFirebaseConfig(){const config=localStorage.getItem('firebaseConfig');if(config){try{initializeFirebase(JSON.parse(config));}catch(e){showConfigBanner(false);}}else{showConfigBanner(false);}}
-        function initializeFirebase(config){try{if(!firebase.apps.length){firebase.initializeApp(config);}db=firebase.firestore();firebaseInitialized=true;showConfigBanner(true);updateSyncStatus('Connected');setupRealtimeSync();}catch(e){showConfigBanner(false);updateSyncStatus('Error');}}
-        function saveFirebaseConfig(){const config={apiKey:document.getElementById('config-apiKey').value,authDomain:document.getElementById('config-authDomain').value,projectId:document.getElementById('config-projectId').value,storageBucket:document.getElementById('config-storageBucket').value,messagingSenderId:document.getElementById('config-messagingSenderId').value,appId:document.getElementById('config-appId').value};if(!config.apiKey||!config.projectId){alert('Fill API Key and Project ID');return;}localStorage.setItem('firebaseConfig',JSON.stringify(config));closeSetupModal();initializeFirebase(config);alert('✅ Connected!');}
-        function clearFirebaseConfig(){if(confirm('Disconnect?')){localStorage.removeItem('firebaseConfig');firebaseInitialized=false;db=null;showConfigBanner(false);updateSyncStatus('Local');}}
-        function testConnection(){if(!firebaseInitialized){alert('Not configured');return;}updateSyncStatus('Testing...');db.collection('_test').doc('connection').set({test:true,timestamp:new Date(),user:currentUser?.username||'guest'}).then(()=>{alert('✅ Connected!');updateSyncStatus('Connected');}).catch((error)=>{alert('❌ Failed: '+error.message);updateSyncStatus('Error');});}
-        function setupRealtimeSync(){if(!firebaseInitialized)return;db.collection('items').onSnapshot((snapshot)=>{items=snapshot.docs.map(doc=>({...doc.data(),id:doc.id}));renderItems();renderInventory();updateSKUFields();});db.collection('products').onSnapshot((snapshot)=>{products=snapshot.docs.map(doc=>({...doc.data(),id:doc.id}));renderProducts();updateAllDropdowns();});db.collection('sales').onSnapshot((snapshot)=>{sales=snapshot.docs.map(doc=>({...doc.data(),id:doc.id}));renderSales();calculateEarnings();updateDashboard();});updateSyncStatus('Synced');}
-        function saveToFirebase(collection,data){if(!firebaseInitialized){saveLocal();return;}const docId=collection==='users'?data.username:data.id.toString();db.collection(collection).doc(docId).set(data).catch((e)=>console.error(e));}
-        function showConfigBanner(isConfigured){const banner=document.getElementById('config-banner');if(isConfigured){banner.className='config-banner success';banner.innerHTML='✅ Connected';}else{banner.className='config-banner';banner.innerHTML='⚠️ Firebase not configured. <a onclick="openSetupModal()">Setup cloud sync</a>';}}
-        function updateSyncStatus(status){document.getElementById('sync-status-text').textContent=status;const s=document.getElementById('settings-sync-status');if(s){s.textContent=status==='Connected'||status==='Synced'?'Connected and syncing':status==='Local'?'Local only':status;}}
-        function openSetupModal(){document.getElementById('setup-modal').classList.add('active');}
-        function closeSetupModal(){document.getElementById('setup-modal').classList.remove('active');}
+        function setupTabs() {
+            const tabsContainer = document.getElementById('tabs-container');
+            
+            if (currentUser.role === 'admin') {
+                // Admin sees all tabs
+                tabsContainer.innerHTML = `
+                    <div class="tab active" onclick="switchTab('dashboard')">🏠 Dashboard</div>
+                    <div class="tab" onclick="switchTab('items')">📦 Items</div>
+                    <div class="tab" onclick="switchTab('expenses')">💰 Expenses</div>
+                    <div class="tab" onclick="switchTab('products')">🛍️ Products</div>
+                    <div class="tab" onclick="switchTab('sales')">📈 Sales</div>
+                    <div class="tab" onclick="switchTab('profit')">💵 Profit</div>
+                    <div class="tab" onclick="switchTab('labor')">👷 Labor</div>
+                    <div class="tab" onclick="switchTab('inventory')">📊 Inventory</div>
+                    <div class="tab" onclick="switchTab('reports')">📋 Reports</div>
+                    <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+                `;
+                // Show first tab
+                document.getElementById('dashboard-tab').classList.add('active');
+            } else {
+                // User sees limited tabs
+                tabsContainer.innerHTML = `
+                    <div class="tab active" onclick="switchTab('dashboard')">🏠 Dashboard</div>
+                    <div class="tab" onclick="switchTab('products')">🛍️ Products</div>
+                    <div class="tab" onclick="switchTab('sales')">📈 Sales</div>
+                    <div class="tab" onclick="switchTab('earnings')">💰 Earnings</div>
+                    <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+                `;
+                // Show first tab
+                document.getElementById('dashboard-tab').classList.add('active');
+            }
+        }
 
-        function checkSession(){const session=JSON.parse(sessionStorage.getItem('currentUser')||'null');if(session){currentUser=session;showApp();}else{showHome();}}
-        function handleLogin(event){
+        function loadFirebaseConfig() {
+            const config = localStorage.getItem('firebaseConfig');
+            if (config) {
+                try {
+                    initializeFirebase(JSON.parse(config));
+                } catch (e) {
+                    console.error('Firebase init error:', e);
+                    showConfigBanner(false);
+                }
+            } else {
+                showConfigBanner(false);
+            }
+        }
+        
+        function initializeFirebase(config) {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(config);
+                }
+                db = firebase.firestore();
+                firebaseInitialized = true;
+                showConfigBanner(true);
+                updateSyncStatus('Connected');
+                
+                if (currentUser) {
+                    setupRealtimeSync();
+                }
+            } catch (e) {
+                console.error('Firebase error:', e);
+                showConfigBanner(false);
+                updateSyncStatus('Error');
+            }
+        }
+        
+        function saveFirebaseConfig() {
+            const config = {
+                apiKey: document.getElementById('config-apiKey').value,
+                authDomain: document.getElementById('config-authDomain').value,
+                projectId: document.getElementById('config-projectId').value,
+                storageBucket: document.getElementById('config-storageBucket').value,
+                messagingSenderId: document.getElementById('config-messagingSenderId').value,
+                appId: document.getElementById('config-appId').value
+            };
+            
+            if (!config.apiKey || !config.projectId) {
+                alert('Fill API Key and Project ID');
+                return;
+            }
+            
+            localStorage.setItem('firebaseConfig', JSON.stringify(config));
+            closeSetupModal();
+            initializeFirebase(config);
+            alert('✅ Connected!');
+        }
+        
+        function clearFirebaseConfig() {
+            if (confirm('Disconnect from Firebase?')) {
+                if (unsubscribeItems) unsubscribeItems();
+                if (unsubscribeProducts) unsubscribeProducts();
+                if (unsubscribeSales) unsubscribeSales();
+                if (unsubscribeExpenses) unsubscribeExpenses();
+                
+                localStorage.removeItem('firebaseConfig');
+                firebaseInitialized = false;
+                db = null;
+                showConfigBanner(false);
+                updateSyncStatus('Local');
+            }
+        }
+        
+        function testConnection() {
+            if (!firebaseInitialized) {
+                alert('Firebase not configured');
+                return;
+            }
+            
+            updateSyncStatus('Testing...');
+            db.collection('_test').doc('connection').set({
+                test: true,
+                timestamp: new Date(),
+                user: currentUser?.username || 'guest'
+            }).then(() => {
+                alert('✅ Connected successfully!');
+                updateSyncStatus('Connected');
+            }).catch((error) => {
+                alert('❌ Connection failed: ' + error.message);
+                updateSyncStatus('Error');
+            });
+        }
+        
+        function setupRealtimeSync() {
+            if (!firebaseInitialized || !currentUser) return;
+            
+            console.log('Setting up Firebase sync...');
+            
+            if (unsubscribeItems) unsubscribeItems();
+            if (unsubscribeProducts) unsubscribeProducts();
+            if (unsubscribeSales) unsubscribeSales();
+            if (unsubscribeExpenses) unsubscribeExpenses();
+            
+            unsubscribeItems = db.collection('items').onSnapshot((snapshot) => {
+                items = snapshot.docs.map(doc => ({...doc.data(), id: doc.data().id || parseInt(doc.id)}));
+                console.log('Items synced:', items.length);
+                saveLocal();
+                renderItems();
+                updateInventory();
+                updateSKUFields();
+            }, (error) => console.error('Items sync error:', error));
+            
+            unsubscribeProducts = db.collection('products').onSnapshot((snapshot) => {
+                products = snapshot.docs.map(doc => ({...doc.data(), id: doc.data().id || parseInt(doc.id)}));
+                console.log('Products synced:', products.length);
+                saveLocal();
+                renderProducts();
+                updateAllDropdowns();
+            }, (error) => console.error('Products sync error:', error));
+            
+            unsubscribeSales = db.collection('sales').onSnapshot((snapshot) => {
+                sales = snapshot.docs.map(doc => ({...doc.data(), id: doc.data().id || parseInt(doc.id)}));
+                console.log('Sales synced:', sales.length);
+                saveLocal();
+                renderSales();
+                calculateEarnings();
+                updateDashboard();
+                calculateProfit();
+                calculateLabor();
+            }, (error) => console.error('Sales sync error:', error));
+            
+            unsubscribeExpenses = db.collection('expenses').onSnapshot((snapshot) => {
+                expenses = snapshot.docs.map(doc => ({...doc.data(), id: doc.data().id || parseInt(doc.id)}));
+                console.log('Expenses synced:', expenses.length);
+                saveLocal();
+                renderExpenses();
+                updateInventory();
+            }, (error) => console.error('Expenses sync error:', error));
+            
+            updateSyncStatus('Synced');
+        }
+        
+        function saveToFirebase(collection, data) {
+            if (!firebaseInitialized) {
+                console.log('Firebase not initialized, saving locally only');
+                saveLocal();
+                return;
+            }
+            
+            const docId = collection === 'users' ? data.username : data.id.toString();
+            db.collection(collection).doc(docId).set(data)
+                .then(() => console.log(`Saved to Firebase: ${collection}/${docId}`))
+                .catch((e) => console.error('Firebase save error:', e));
+        }
+        
+        function showConfigBanner(isConfigured) {
+            const banner = document.getElementById('config-banner');
+            if (isConfigured) {
+                banner.className = 'config-banner success';
+                banner.innerHTML = '✅ Firebase Connected - Data syncing across devices';
+            } else {
+                banner.className = 'config-banner';
+                banner.innerHTML = '⚠️ Firebase not configured. Data stored locally only. <a onclick="openSetupModal()">Setup cloud sync</a>';
+            }
+        }
+        
+        function updateSyncStatus(status) {
+            document.getElementById('sync-status-text').textContent = status;
+            const s = document.getElementById('settings-sync-status');
+            if (s) {
+                if (status === 'Connected' || status === 'Synced') {
+                    s.textContent = '✅ Connected and syncing across all devices';
+                } else if (status === 'Local') {
+                    s.textContent = '💾 Local storage only (not syncing)';
+                } else {
+                    s.textContent = status;
+                }
+            }
+        }
+        
+        function openSetupModal() {
+            document.getElementById('setup-modal').classList.add('active');
+        }
+        
+        function closeSetupModal() {
+            document.getElementById('setup-modal').classList.remove('active');
+        }
+
+        function checkSession() {
+            const session = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+            if (session) {
+                currentUser = session;
+                showApp();
+            } else {
+                showHome();
+            }
+        }
+        
+        function handleLogin(event) {
             event.preventDefault();
-            const username=document.getElementById('login-username').value;
-            const password=document.getElementById('login-password').value;
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
             
-            // Make sure users are loaded
             users = initializeDefaultUsers();
+            const user = users.find(u => u.username === username && u.password === password);
             
-            console.log('Attempting login:', username);
-            console.log('Available users:', users.map(u => u.username));
-            
-            const user=users.find(u=>u.username===username&&u.password===password);
-            
-            if(user){
-                currentUser={username:user.username,role:user.role,loginTime:new Date().toISOString()};
-                sessionStorage.setItem('currentUser',JSON.stringify(currentUser));
+            if (user) {
+                currentUser = {username: user.username, role: user.role, loginTime: new Date().toISOString()};
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
                 showApp();
                 document.getElementById('login-form').reset();
-                document.getElementById('login-error').innerHTML='';
-            }else{
-                console.log('Login failed for:', username);
+                document.getElementById('login-error').innerHTML = '';
+            } else {
                 showError('Invalid username or password. Try: admin/admin123 or user/user123');
             }
         }
-        function handleLogout(){if(confirm('Logout?')){sessionStorage.removeItem('currentUser');currentUser=null;showHome();}}
-        function changePassword(event){event.preventDefault();const currentPassword=document.getElementById('current-password').value;const newPassword=document.getElementById('new-password').value;const userIndex=users.findIndex(u=>u.username===currentUser.username);if(users[userIndex].password!==currentPassword){alert('Wrong password!');return;}users[userIndex].password=newPassword;saveUsers();saveToFirebase('users',users[userIndex]);document.getElementById('change-password-form').reset();alert('Password changed!');}
-        function addUser(event){event.preventDefault();const username=document.getElementById('new-username').value;const password=document.getElementById('new-user-password').value;const role=document.getElementById('new-user-role').value;if(users.find(u=>u.username===username)){alert('Exists!');return;}const newUser={username,password,role,createdAt:new Date().toISOString()};users.push(newUser);saveUsers();saveToFirebase('users',newUser);renderUsersList();document.getElementById('add-user-form').reset();alert('User added!');}
-        function deleteUser(username){if(username==='admin'||username===currentUser.username){alert('Cannot delete!');return;}if(confirm('Delete?')){users=users.filter(u=>u.username!==username);saveUsers();if(firebaseInitialized){db.collection('users').doc(username).delete();}renderUsersList();}}
-        function renderUsersList(){const container=document.getElementById('users-list');if(!container)return;container.innerHTML=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:12px;text-align:left;background:#f8f9fa;">Username</th><th style="padding:12px;text-align:left;background:#f8f9fa;">Role</th><th style="padding:12px;text-align:left;background:#f8f9fa;">Actions</th></tr></thead><tbody>${users.map(user=>`<tr><td style="padding:12px;">${user.username}</td><td style="padding:12px;"><span class="user-role-badge">${user.role}</span></td><td style="padding:12px;">${user.username!=='admin'&&user.username!==currentUser.username?`<button class="btn-danger" onclick="deleteUser('${user.username}')" style="padding:5px 15px;font-size:14px;">Delete</button>`:'Protected'}</td></tr>`).join('')}</tbody></table></div>`;}
-        function saveUsers(){localStorage.setItem('users',JSON.stringify(users));}
-        function showError(message){document.getElementById('login-error').innerHTML=`<div class="error-message">${message}</div>`;}
-        function togglePassword(){const input=document.getElementById('login-password');input.type=input.type==='password'?'text':'password';}
+        
+        function handleLogout() {
+            if (confirm('Logout?')) {
+                if (unsubscribeItems) unsubscribeItems();
+                if (unsubscribeProducts) unsubscribeProducts();
+                if (unsubscribeSales) unsubscribeSales();
+                if (unsubscribeExpenses) unsubscribeExpenses();
+                
+                sessionStorage.removeItem('currentUser');
+                currentUser = null;
+                showHome();
+            }
+        }
+        
+        function changePassword(event) {
+            event.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            
+            const userIndex = users.findIndex(u => u.username === currentUser.username);
+            if (users[userIndex].password !== currentPassword) {
+                alert('Wrong current password!');
+                return;
+            }
+            
+            users[userIndex].password = newPassword;
+            saveUsers();
+            saveToFirebase('users', users[userIndex]);
+            document.getElementById('change-password-form').reset();
+            alert('Password changed successfully!');
+        }
+        
+        function addUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-user-password').value;
+            const role = document.getElementById('new-user-role').value;
+            
+            if (users.find(u => u.username === username)) {
+                alert('Username already exists!');
+                return;
+            }
+            
+            const newUser = {username, password, role, createdAt: new Date().toISOString()};
+            users.push(newUser);
+            saveUsers();
+            saveToFirebase('users', newUser);
+            renderUsersList();
+            document.getElementById('add-user-form').reset();
+            alert('User added successfully!');
+        }
+        
+        function deleteUser(username) {
+            if (username === 'admin' || username === currentUser.username) {
+                alert('Cannot delete this user!');
+                return;
+            }
+            
+            if (confirm('Delete user: ' + username + '?')) {
+                users = users.filter(u => u.username !== username);
+                saveUsers();
+                if (firebaseInitialized) {
+                    db.collection('users').doc(username).delete();
+                }
+                renderUsersList();
+            }
+        }
+        
+        function renderUsersList() {
+            const container = document.getElementById('users-list');
+            if (!container) return;
+            
+            container.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:12px;text-align:left;background:#f8f9fa;">Username</th><th style="padding:12px;text-align:left;background:#f8f9fa;">Role</th><th style="padding:12px;text-align:left;background:#f8f9fa;">Actions</th></tr></thead><tbody>${users.map(user => `<tr><td style="padding:12px;">${user.username}</td><td style="padding:12px;"><span class="user-role-badge">${user.role}</span></td><td style="padding:12px;">${user.username !== 'admin' && user.username !== currentUser.username ? `<button class="btn-danger" onclick="deleteUser('${user.username}')" style="padding:5px 15px;font-size:14px;">Delete</button>` : 'Protected'}</td></tr>`).join('')}</tbody></table></div>`;
+        }
+        
+        function saveUsers() {
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+        
+        function showError(message) {
+            document.getElementById('login-error').innerHTML = `<div class="error-message">${message}</div>`;
+        }
+        
+        function togglePassword() {
+            const input = document.getElementById('login-password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
 
-        function loadLocalData(){items=JSON.parse(localStorage.getItem('items')||'[]');products=JSON.parse(localStorage.getItem('products')||'[]');sales=JSON.parse(localStorage.getItem('sales')||'[]');}
-        function saveLocal(){localStorage.setItem('items',JSON.stringify(items));localStorage.setItem('products',JSON.stringify(products));localStorage.setItem('sales',JSON.stringify(sales));}
+        function loadLocalData() {
+            items = JSON.parse(localStorage.getItem('items') || '[]');
+            products = JSON.parse(localStorage.getItem('products') || '[]');
+            sales = JSON.parse(localStorage.getItem('sales') || '[]');
+            expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            
+            console.log('Loaded from localStorage:', {items: items.length, products: products.length, sales: sales.length, expenses: expenses.length});
+        }
+        
+        function saveLocal() {
+            localStorage.setItem('items', JSON.stringify(items));
+            localStorage.setItem('products', JSON.stringify(products));
+            localStorage.setItem('sales', JSON.stringify(sales));
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+        }
 
-        function generateItemSKU(){const prefix='ITM';const nums=items.map(i=>i.sku).filter(sku=>sku&&sku.startsWith(prefix)).map(sku=>parseInt(sku.replace(prefix,''))).filter(num=>!isNaN(num));const nextNum=nums.length>0?Math.max(...nums)+1:1;return`${prefix}${String(nextNum).padStart(4,'0')}`;}
-        function generateProductSKU(){const prefix='PRD';const nums=products.map(p=>p.sku).filter(sku=>sku&&sku.startsWith(prefix)).map(sku=>parseInt(sku.replace(prefix,''))).filter(num=>!isNaN(num));const nextNum=nums.length>0?Math.max(...nums)+1:1;return`${prefix}${String(nextNum).padStart(4,'0')}`;}
-        function updateSKUFields(){const itemSKU=document.getElementById('item-sku');if(itemSKU)itemSKU.value=generateItemSKU();const productSKU=document.getElementById('product-sku');if(productSKU)productSKU.value=generateProductSKU();}
+        function generateItemSKU() {
+            const prefix = 'ITM';
+            const nums = items.map(i => i.sku).filter(sku => sku && sku.startsWith(prefix)).map(sku => parseInt(sku.replace(prefix, ''))).filter(num => !isNaN(num));
+            const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+            return `${prefix}${String(nextNum).padStart(4, '0')}`;
+        }
+        
+        function generateProductSKU() {
+            const prefix = 'PRD';
+            const nums = products.map(p => p.sku).filter(sku => sku && sku.startsWith(prefix)).map(sku => parseInt(sku.replace(prefix, ''))).filter(num => !isNaN(num));
+            const nextNum = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+            return `${prefix}${String(nextNum).padStart(4, '0')}`;
+        }
+        
+        function updateSKUFields() {
+            const itemSKU = document.getElementById('item-sku');
+            if (itemSKU) itemSKU.value = generateItemSKU();
+            
+            const productSKU = document.getElementById('product-sku');
+            if (productSKU) productSKU.value = generateProductSKU();
+        }
 
-        function addItem(event){event.preventDefault();if(currentUser.role!=='admin'){alert('Admin only!');return;}const item={id:Date.now(),name:document.getElementById('item-name').value,price:parseFloat(document.getElementById('item-price').value),unit:document.getElementById('item-unit').value,category:document.getElementById('item-category').value||'Uncategorized',sku:generateItemSKU(),quantity:parseFloat(document.getElementById('item-quantity').value)||0,specifications:document.getElementById('item-specs').value,createdBy:currentUser.username,createdAt:new Date().toISOString()};items.push(item);saveLocal();saveToFirebase('items',item);renderItems();renderInventory();document.getElementById('item-form').reset();updateSKUFields();alert('Item added: '+item.sku);}
-        function renderItems(){const container=document.getElementById('items-list');if(!container)return;if(items.length===0){container.innerHTML='<div class="empty-state"><h3>No items</h3></div>';return;}container.innerHTML=items.map(item=>`<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name} (${item.sku})</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${item.category} • ${item.unit} • Qty: ${item.quantity}</div>${item.specifications?`<div style="color:#6c757d;font-size:13px;margin-top:5px;">${item.specifications}</div>`:''}</div><div class="item-price">₱${item.price.toFixed(2)}</div></div>${currentUser.role==='admin'?`<div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button></div>`:''}</div>`).join('');}
-        function deleteItem(id){if(confirm('Delete?')){items=items.filter(i=>i.id!==id);saveLocal();if(firebaseInitialized){db.collection('items').doc(id.toString()).delete();}renderItems();updateSKUFields();}}
-        function filterItems(){const search=document.getElementById('item-search')?.value.toLowerCase();if(!search){renderItems();return;}const filtered=items.filter(item=>item.name.toLowerCase().includes(search)||item.category.toLowerCase().includes(search)||(item.sku&&item.sku.toLowerCase().includes(search)));const container=document.getElementById('items-list');if(filtered.length===0){container.innerHTML='<div class="empty-state"><h3>Not found</h3></div>';return;}container.innerHTML=filtered.map(item=>`<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name} (${item.sku})</div><div style="color:#6c757d;font-size:14px;">${item.category} • ${item.unit}</div></div><div class="item-price">₱${item.price.toFixed(2)}</div></div>${currentUser.role==='admin'?`<div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button></div>`:''}</div>`).join('');}
+        // ITEMS
+        function addItem(event) {
+            event.preventDefault();
+            if (currentUser.role !== 'admin') {
+                alert('Admin only!');
+                return;
+            }
+            
+            const item = {
+                id: Date.now(),
+                name: document.getElementById('item-name').value,
+                price: parseFloat(document.getElementById('item-price').value),
+                unit: document.getElementById('item-unit').value,
+                category: document.getElementById('item-category').value || 'Uncategorized',
+                sku: generateItemSKU(),
+                quantity: parseFloat(document.getElementById('item-quantity').value) || 0,
+                specifications: document.getElementById('item-specs').value,
+                createdBy: currentUser.username,
+                createdAt: new Date().toISOString()
+            };
+            
+            items.push(item);
+            saveLocal();
+            saveToFirebase('items', item);
+            renderItems();
+            updateInventory();
+            document.getElementById('item-form').reset();
+            updateSKUFields();
+            alert('Item added: ' + item.sku);
+        }
+        
+        function renderItems() {
+            const container = document.getElementById('items-list');
+            if (!container) return;
+            
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No items yet</h3><p>Add items to get started</p></div>';
+                return;
+            }
+            
+            container.innerHTML = items.map(item => `<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name} (${item.sku})</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${item.category} • ${item.unit} • Qty: ${item.quantity}</div>${item.specifications ? `<div style="color:#6c757d;font-size:13px;margin-top:5px;">${item.specifications}</div>` : ''}</div><div class="item-price">₱${item.price.toFixed(2)}</div></div>${currentUser.role === 'admin' ? `<div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button></div>` : ''}</div>`).join('');
+        }
+        
+        function deleteItem(id) {
+            if (confirm('Delete this item?')) {
+                items = items.filter(i => i.id !== id);
+                saveLocal();
+                if (firebaseInitialized) {
+                    db.collection('items').doc(id.toString()).delete();
+                }
+                renderItems();
+                updateSKUFields();
+            }
+        }
+        
+        function filterItems() {
+            const search = document.getElementById('item-search')?.value.toLowerCase();
+            if (!search) {
+                renderItems();
+                return;
+            }
+            
+            const filtered = items.filter(item => item.name.toLowerCase().includes(search) || item.category.toLowerCase().includes(search) || (item.sku && item.sku.toLowerCase().includes(search)));
+            const container = document.getElementById('items-list');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>Not found</h3></div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(item => `<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name} (${item.sku})</div><div style="color:#6c757d;font-size:14px;">${item.category} • ${item.unit}</div></div><div class="item-price">₱${item.price.toFixed(2)}</div></div>${currentUser.role === 'admin' ? `<div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteItem(${item.id})">Delete</button></div>` : ''}</div>`).join('');
+        }
 
-        function addIngredientRow(){const container=document.getElementById('ingredients-container');const rowId=Date.now();const row=document.createElement('div');row.className='ingredient-row';row.id='ingredient-'+rowId;row.innerHTML=`<div><label>Item</label><select class="ingredient-item" required><option value="">Select...</option>${items.map(item=>`<option value="${item.id}">${item.name} (₱${item.price}/${item.unit})</option>`).join('')}</select></div><div><label>Quantity</label><input type="number" class="ingredient-quantity" step="0.01" required placeholder="0"></div><button type="button" class="btn-danger" onclick="removeIngredientRow(${rowId})">Remove</button>`;container.appendChild(row);}
-        function removeIngredientRow(rowId){document.getElementById('ingredient-'+rowId).remove();}
-        function addProduct(event){event.preventDefault();const ingredientRows=document.querySelectorAll('.ingredient-row');const ingredients=[];let materialsCost=0;ingredientRows.forEach(row=>{const itemId=parseInt(row.querySelector('.ingredient-item').value);const quantity=parseFloat(row.querySelector('.ingredient-quantity').value);const item=items.find(i=>i.id===itemId);if(item&&quantity>0){const cost=item.price*quantity;materialsCost+=cost;ingredients.push({itemId,itemName:item.name,quantity,unit:item.unit,pricePerUnit:item.price,totalCost:cost});}});if(ingredients.length===0){alert('Add material!');return;}const laborCost=parseFloat(document.getElementById('product-labor').value)||0;const markupPercent=parseFloat(document.getElementById('product-markup').value)||0;const totalCost=materialsCost+laborCost;const sellingPrice=totalCost*(1+markupPercent/100);const product={id:Date.now(),name:document.getElementById('product-name').value,sku:generateProductSKU(),description:document.getElementById('product-description').value,ingredients,materialsCost,laborCost,totalCost,markupPercent,sellingPrice,createdBy:currentUser.username,createdAt:new Date().toISOString()};products.push(product);saveLocal();saveToFirebase('products',product);renderProducts();updateAllDropdowns();document.getElementById('product-form').reset();document.getElementById('ingredients-container').innerHTML='';updateSKUFields();alert(`Product created! ₱${sellingPrice.toFixed(2)}`);}
-        function renderProducts(){const container=document.getElementById('products-list');if(!container)return;if(products.length===0){container.innerHTML='<div class="empty-state"><h3>No products</h3></div>';return;}container.innerHTML=products.map(product=>`<div class="product-card"><div class="item-header"><div><div class="item-name">${product.name} (${product.sku})</div>${product.description?`<div style="color:#6c757d;font-size:14px;">${product.description}</div>`:''}<div style="margin-top:5px;"><span style="font-size:12px;color:#6c757d;">By: ${product.createdBy}</span></div></div><div class="item-price">₱${product.sellingPrice.toFixed(2)}</div></div><div class="calculation-box"><h4 style="margin-bottom:15px;">Breakdown</h4>${product.ingredients.map(ing=>`<div class="calculation-row"><span>${ing.itemName} (${ing.quantity} ${ing.unit})</span><span>₱${ing.totalCost.toFixed(2)}</span></div>`).join('')}<div class="calculation-row"><span><strong>Materials</strong></span><span><strong>₱${product.materialsCost.toFixed(2)}</strong></span></div><div class="calculation-row"><span>Labor</span><span>₱${product.laborCost.toFixed(2)}</span></div><div class="calculation-row total"><span>Price</span><span>₱${product.sellingPrice.toFixed(2)}</span></div></div><div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteProduct(${product.id})">Delete</button></div></div>`).join('');}
-        function deleteProduct(id){if(confirm('Delete?')){products=products.filter(p=>p.id!==id);saveLocal();if(firebaseInitialized){db.collection('products').doc(id.toString()).delete();}renderProducts();updateAllDropdowns();}}
+        // EXPENSES
+        function addExpense(event) {
+            event.preventDefault();
+            if (currentUser.role !== 'admin') {
+                alert('Admin only!');
+                return;
+            }
+            
+            const itemId = parseInt(document.getElementById('expense-item').value);
+            const item = items.find(i => i.id === itemId);
+            if (!item) {
+                alert('Please select a valid item');
+                return;
+            }
+            
+            const quantity = parseFloat(document.getElementById('expense-quantity').value);
+            const cost = parseFloat(document.getElementById('expense-cost').value);
+            
+            const expense = {
+                id: Date.now(),
+                date: document.getElementById('expense-date').value,
+                itemId: itemId,
+                itemName: item.name,
+                itemUnit: item.unit,
+                quantity: quantity,
+                cost: cost,
+                costPerUnit: cost / quantity,
+                supplier: document.getElementById('expense-supplier').value,
+                notes: document.getElementById('expense-notes').value,
+                createdAt: new Date().toISOString()
+            };
+            
+            expenses.push(expense);
+            saveLocal();
+            saveToFirebase('expenses', expense);
+            renderExpenses();
+            updateInventory();
+            document.getElementById('expense-form').reset();
+            document.getElementById('expense-date').valueAsDate = new Date();
+            alert('Expense recorded!');
+        }
+        
+        function renderExpenses() {
+            const container = document.getElementById('expenses-list');
+            if (!container) return;
+            
+            const filter = document.getElementById('expense-filter')?.value || 'all';
+            const filtered = filterByPeriod(expenses, filter);
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No expenses recorded</h3></div>';
+                return;
+            }
+            
+            const totalExpenses = filtered.reduce((sum, exp) => sum + exp.cost, 0);
+            container.innerHTML = `<div class="info-box"><h4>Total Expenses (${filter}): ₱${totalExpenses.toFixed(2)}</h4></div>` + filtered.reverse().map(expense => `<div class="expense-card"><div class="item-header"><div><div class="item-name">${expense.itemName}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${expense.quantity} ${expense.itemUnit} @ ₱${expense.costPerUnit.toFixed(2)}/${expense.itemUnit}${expense.supplier ? ` • Supplier: ${expense.supplier}` : ''}</div><span class="date-badge">${new Date(expense.date).toLocaleDateString()}</span></div><div class="item-price">₱${expense.cost.toFixed(2)}</div></div>${expense.notes ? `<div style="margin-top:10px;color:#6c757d;font-size:14px;">📝 ${expense.notes}</div>` : ''}<div class="item-actions"><button class="btn-danger" onclick="deleteExpense(${expense.id})">Delete</button></div></div>`).join('');
+        }
+        
+        function deleteExpense(id) {
+            if (confirm('Delete this expense?')) {
+                expenses = expenses.filter(e => e.id !== id);
+                saveLocal();
+                if (firebaseInitialized) {
+                    db.collection('expenses').doc(id.toString()).delete();
+                }
+                renderExpenses();
+                updateInventory();
+            }
+        }
+        
+        function filterExpenses() {
+            renderExpenses();
+        }
 
-        function updateSalePrice(){const productId=parseInt(document.getElementById('sale-product').value);const product=products.find(p=>p.id===productId);if(product){document.getElementById('sale-price').value=product.sellingPrice.toFixed(2);}}
-        function recordSale(event){event.preventDefault();const productId=parseInt(document.getElementById('sale-product').value);const product=products.find(p=>p.id===productId);if(!product){alert('Select product');return;}const quantity=parseInt(document.getElementById('sale-quantity').value);const sellingPrice=parseFloat(document.getElementById('sale-price').value);const totalRevenue=sellingPrice*quantity;let userEarnings=0;if(product.createdBy===currentUser.username){userEarnings=product.laborCost*quantity;}else{userEarnings=totalRevenue*0.10;}const sale={id:Date.now(),date:document.getElementById('sale-date').value,productId,productName:product.name,productCreator:product.createdBy,quantity,sellingPrice,totalRevenue,soldBy:currentUser.username,userEarnings,earningsType:product.createdBy===currentUser.username?'labor':'commission',customer:document.getElementById('sale-customer').value,payment:document.getElementById('sale-payment').value,createdAt:new Date().toISOString()};sales.push(sale);saveLocal();saveToFirebase('sales',sale);renderSales();calculateEarnings();updateDashboard();document.getElementById('sale-form').reset();document.getElementById('sale-date').valueAsDate=new Date();alert(`Sale recorded! Earned: ₱${userEarnings.toFixed(2)}`);}
-        function renderSales(){const container=document.getElementById('sales-list');if(!container)return;const filter=document.getElementById('sales-filter')?.value||'all';const filtered=filterByPeriod(sales,filter);if(filtered.length===0){container.innerHTML='<div class="empty-state"><h3>No sales</h3></div>';return;}container.innerHTML=filtered.reverse().map(sale=>`<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">@ ₱${sale.sellingPrice.toFixed(2)} each${sale.customer?' • '+sale.customer:''}${sale.payment?' • '+sale.payment:''}</div><div style="margin-top:5px;"><span style="font-size:12px;color:#6c757d;">Sold by: ${sale.soldBy}</span><span class="earnings-badge ${sale.earningsType==='labor'?'own':'commission'}">${sale.earningsType==='labor'?'Own Product':'10% Commission'}</span></div></div><div><div class="item-price">₱${sale.totalRevenue.toFixed(2)}</div><div style="text-align:right;font-size:14px;color:#28a745;margin-top:5px;">Earned: ₱${sale.userEarnings.toFixed(2)}</div></div></div></div>`).join('');}
-        function filterSales(){renderSales();}
+        // PRODUCTS
+        function addIngredientRow() {
+            const container = document.getElementById('ingredients-container');
+            const rowId = Date.now();
+            const row = document.createElement('div');
+            row.className = 'ingredient-row';
+            row.id = 'ingredient-' + rowId;
+            row.innerHTML = `<div><label>Item</label><select class="ingredient-item" required><option value="">Select...</option>${items.map(item => `<option value="${item.id}">${item.name} (₱${item.price}/${item.unit})</option>`).join('')}</select></div><div><label>Quantity</label><input type="number" class="ingredient-quantity" step="0.01" required placeholder="0"></div><button type="button" class="btn-danger" onclick="removeIngredientRow(${rowId})">Remove</button>`;
+            container.appendChild(row);
+        }
+        
+        function removeIngredientRow(rowId) {
+            document.getElementById('ingredient-' + rowId).remove();
+        }
+        
+        function addProduct(event) {
+            event.preventDefault();
+            
+            const ingredientRows = document.querySelectorAll('.ingredient-row');
+            const ingredients = [];
+            let materialsCost = 0;
+            
+            ingredientRows.forEach(row => {
+                const itemId = parseInt(row.querySelector('.ingredient-item').value);
+                const quantity = parseFloat(row.querySelector('.ingredient-quantity').value);
+                const item = items.find(i => i.id === itemId);
+                
+                if (item && quantity > 0) {
+                    const cost = item.price * quantity;
+                    materialsCost += cost;
+                    ingredients.push({itemId, itemName: item.name, quantity, unit: item.unit, pricePerUnit: item.price, totalCost: cost});
+                }
+            });
+            
+            if (ingredients.length === 0) {
+                alert('Add at least one material!');
+                return;
+            }
+            
+            const laborCost = parseFloat(document.getElementById('product-labor').value) || 0;
+            const markupPercent = parseFloat(document.getElementById('product-markup').value) || 0;
+            const totalCost = materialsCost + laborCost;
+            const sellingPrice = totalCost * (1 + markupPercent / 100);
+            
+            const product = {
+                id: Date.now(),
+                name: document.getElementById('product-name').value,
+                sku: generateProductSKU(),
+                description: document.getElementById('product-description').value,
+                ingredients,
+                materialsCost,
+                laborCost,
+                totalCost,
+                markupPercent,
+                sellingPrice,
+                createdBy: currentUser.username,
+                createdAt: new Date().toISOString()
+            };
+            
+            products.push(product);
+            saveLocal();
+            saveToFirebase('products', product);
+            renderProducts();
+            updateAllDropdowns();
+            document.getElementById('product-form').reset();
+            document.getElementById('ingredients-container').innerHTML = '';
+            updateSKUFields();
+            alert(`Product created! Selling price: ₱${sellingPrice.toFixed(2)}`);
+        }
+        
+        function renderProducts() {
+            const container = document.getElementById('products-list');
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No products yet</h3><p>Create products using items</p></div>';
+                return;
+            }
+            
+            container.innerHTML = products.map(product => `<div class="product-card"><div class="item-header"><div><div class="item-name">${product.name} (${product.sku})</div>${product.description ? `<div style="color:#6c757d;font-size:14px;">${product.description}</div>` : ''}<div style="margin-top:5px;"><span style="font-size:12px;color:#6c757d;">By: ${product.createdBy}</span></div></div><div class="item-price">₱${product.sellingPrice.toFixed(2)}</div></div><div class="calculation-box"><h4 style="margin-bottom:15px;">Cost Breakdown</h4>${product.ingredients.map(ing => `<div class="calculation-row"><span>${ing.itemName} (${ing.quantity} ${ing.unit})</span><span>₱${ing.totalCost.toFixed(2)}</span></div>`).join('')}<div class="calculation-row"><span><strong>Materials Total</strong></span><span><strong>₱${product.materialsCost.toFixed(2)}</strong></span></div><div class="calculation-row"><span>Labor Cost</span><span>₱${product.laborCost.toFixed(2)}</span></div><div class="calculation-row total"><span>Selling Price</span><span>₱${product.sellingPrice.toFixed(2)}</span></div></div><div class="item-actions" style="margin-top:10px;"><button class="btn-danger" onclick="deleteProduct(${product.id})">Delete</button></div></div>`).join('');
+        }
+        
+        function deleteProduct(id) {
+            if (confirm('Delete this product?')) {
+                products = products.filter(p => p.id !== id);
+                saveLocal();
+                if (firebaseInitialized) {
+                    db.collection('products').doc(id.toString()).delete();
+                }
+                renderProducts();
+                updateAllDropdowns();
+            }
+        }
 
-        function calculateEarnings(){const filter=document.getElementById('earnings-filter')?.value||'all';const mySales=filterByPeriod(sales.filter(s=>s.soldBy===currentUser.username),filter);const totalEarnings=mySales.reduce((sum,s)=>sum+s.userEarnings,0);const laborEarnings=mySales.filter(s=>s.earningsType==='labor').reduce((sum,s)=>sum+s.userEarnings,0);const commissionEarnings=mySales.filter(s=>s.earningsType==='commission').reduce((sum,s)=>sum+s.userEarnings,0);const totalSales=mySales.length;const statsContainer=document.getElementById('earnings-stats');if(statsContainer){statsContainer.innerHTML=`<div class="stat-card success"><div class="stat-value">₱${totalEarnings.toFixed(2)}</div><div class="stat-label">Total</div></div><div class="stat-card info"><div class="stat-value">₱${laborEarnings.toFixed(2)}</div><div class="stat-label">Labor</div></div><div class="stat-card warning"><div class="stat-value">₱${commissionEarnings.toFixed(2)}</div><div class="stat-label">Commission</div></div><div class="stat-card"><div class="stat-value">${totalSales}</div><div class="stat-label">Sales</div></div>`;}const detailsContainer=document.getElementById('earnings-details');if(detailsContainer){if(mySales.length===0){detailsContainer.innerHTML='<div class="empty-state"><h3>No sales</h3></div>';}else{detailsContainer.innerHTML=mySales.reverse().map(sale=>`<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${new Date(sale.date).toLocaleDateString()}<span class="earnings-badge ${sale.earningsType==='labor'?'own':'commission'}">${sale.earningsType==='labor'?'Your Product':'10% Commission'}</span></div></div><div class="item-price">₱${sale.userEarnings.toFixed(2)}</div></div></div>`).join('');}}}
+        // SALES
+        function updateSalePrice() {
+            const productId = parseInt(document.getElementById('sale-product').value);
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                document.getElementById('sale-price').value = product.sellingPrice.toFixed(2);
+            }
+        }
+        
+        function recordSale(event) {
+            event.preventDefault();
+            
+            const productId = parseInt(document.getElementById('sale-product').value);
+            const product = products.find(p => p.id === productId);
+            
+            if (!product) {
+                alert('Select a product');
+                return;
+            }
+            
+            const quantity = parseInt(document.getElementById('sale-quantity').value);
+            const sellingPrice = parseFloat(document.getElementById('sale-price').value);
+            const totalRevenue = sellingPrice * quantity;
+            
+            let userEarnings = 0;
+            if (product.createdBy === currentUser.username) {
+                userEarnings = product.laborCost * quantity;
+            } else {
+                userEarnings = totalRevenue * 0.10;
+            }
+            
+            const totalCost = product.totalCost * quantity;
+            const totalProfit = totalRevenue - totalCost;
+            
+            const sale = {
+                id: Date.now(),
+                date: document.getElementById('sale-date').value,
+                productId,
+                productName: product.name,
+                productCreator: product.createdBy,
+                quantity,
+                sellingPrice,
+                totalRevenue,
+                costPerUnit: product.totalCost,
+                totalCost,
+                profit: totalProfit,
+                laborCost: product.laborCost * quantity,
+                soldBy: currentUser.username,
+                userEarnings,
+                earningsType: product.createdBy === currentUser.username ? 'labor' : 'commission',
+                customer: document.getElementById('sale-customer').value,
+                payment: document.getElementById('sale-payment').value,
+                createdAt: new Date().toISOString()
+            };
+            
+            sales.push(sale);
+            saveLocal();
+            saveToFirebase('sales', sale);
+            renderSales();
+            calculateEarnings();
+            updateDashboard();
+            calculateProfit();
+            calculateLabor();
+            document.getElementById('sale-form').reset();
+            document.getElementById('sale-date').valueAsDate = new Date();
+            alert(`Sale recorded! You earned: ₱${userEarnings.toFixed(2)}`);
+        }
+        
+        function renderSales() {
+            const container = document.getElementById('sales-list');
+            if (!container) return;
+            
+            const filter = document.getElementById('sales-filter')?.value || 'all';
+            const filtered = filterByPeriod(sales, filter);
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No sales yet</h3></div>';
+                return;
+            }
+            
+            const totalRevenue = filtered.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+            const totalProfit = filtered.reduce((sum, sale) => sum + sale.profit, 0);
+            
+            container.innerHTML = `<div class="info-box"><h4>Total Revenue (${filter}): ₱${totalRevenue.toFixed(2)} | Total Profit: ₱${totalProfit.toFixed(2)}</h4></div>` + filtered.reverse().map(sale => `<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">@ ₱${sale.sellingPrice.toFixed(2)} each${sale.customer ? ' • ' + sale.customer : ''}${sale.payment ? ' • ' + sale.payment : ''}</div><div style="margin-top:5px;"><span style="font-size:12px;color:#6c757d;">Sold by: ${sale.soldBy}</span><span class="earnings-badge ${sale.earningsType === 'labor' ? 'own' : 'commission'}">${sale.earningsType === 'labor' ? 'Own Product' : '10% Commission'}</span></div></div><div><div class="item-price">₱${sale.totalRevenue.toFixed(2)}</div><div style="text-align:right;font-size:14px;color:#28a745;margin-top:5px;">Earned: ₱${sale.userEarnings.toFixed(2)}</div></div></div></div>`).join('');
+        }
+        
+        function filterSales() {
+            renderSales();
+        }
 
-        function renderInventory(){const container=document.getElementById('inventory-list');if(!container)return;if(items.length===0){container.innerHTML='<div class="empty-state"><h3>No items</h3></div>';return;}container.innerHTML=items.map(item=>`<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name} (${item.sku})</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${item.category} • ${item.unit} • ₱${item.price.toFixed(2)}/${item.unit}</div>${item.specifications?`<div style="color:#6c757d;font-size:13px;margin-top:5px;">${item.specifications}</div>`:''}</div><div><div class="item-price">${item.quantity.toFixed(2)} ${item.unit}</div><div style="text-align:right;font-size:14px;color:#6c757d;margin-top:5px;">Available</div></div></div></div>`).join('');}
+        // EARNINGS
+        function calculateEarnings() {
+            const filter = document.getElementById('earnings-filter')?.value || 'all';
+            const mySales = filterByPeriod(sales.filter(s => s.soldBy === currentUser.username), filter);
+            
+            const totalEarnings = mySales.reduce((sum, s) => sum + s.userEarnings, 0);
+            const laborEarnings = mySales.filter(s => s.earningsType === 'labor').reduce((sum, s) => sum + s.userEarnings, 0);
+            const commissionEarnings = mySales.filter(s => s.earningsType === 'commission').reduce((sum, s) => sum + s.userEarnings, 0);
+            const totalSales = mySales.length;
+            
+            const statsContainer = document.getElementById('earnings-stats');
+            if (statsContainer) {
+                statsContainer.innerHTML = `<div class="stat-card success"><div class="stat-value">₱${totalEarnings.toFixed(2)}</div><div class="stat-label">Total Earnings</div></div><div class="stat-card info"><div class="stat-value">₱${laborEarnings.toFixed(2)}</div><div class="stat-label">From Labor</div></div><div class="stat-card warning"><div class="stat-value">₱${commissionEarnings.toFixed(2)}</div><div class="stat-label">From Commission</div></div><div class="stat-card"><div class="stat-value">${totalSales}</div><div class="stat-label">Total Sales</div></div>`;
+            }
+            
+            const detailsContainer = document.getElementById('earnings-details');
+            if (detailsContainer) {
+                if (mySales.length === 0) {
+                    detailsContainer.innerHTML = '<div class="empty-state"><h3>No sales in this period</h3></div>';
+                } else {
+                    detailsContainer.innerHTML = mySales.reverse().map(sale => `<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">${new Date(sale.date).toLocaleDateString()}<span class="earnings-badge ${sale.earningsType === 'labor' ? 'own' : 'commission'}">${sale.earningsType === 'labor' ? 'Your Product' : '10% Commission'}</span></div></div><div class="item-price">₱${sale.userEarnings.toFixed(2)}</div></div></div>`).join('');
+                }
+            }
+        }
 
-        function renderCatalog(){const container=document.getElementById('product-catalog-grid');if(!container)return;if(products.length===0){container.innerHTML='<div class="empty-state"><h3>No products</h3></div>';return;}container.innerHTML=products.map(product=>{const availableQty=items.reduce((total,item)=>{const ingredient=product.ingredients.find(ing=>ing.itemId===item.id);if(ingredient){const maxUnits=Math.floor(item.quantity/ingredient.quantity);return total===null?maxUnits:Math.min(total,maxUnits);}return total;},null);const stockClass=availableQty<=5?'low':'';return`<div class="product-catalog-card"><div class="product-catalog-name">${product.name}</div>${product.description?`<div style="color:#6c757d;margin:10px 0;">${product.description}</div>`:''}<div class="product-catalog-price">₱${product.sellingPrice.toFixed(2)}</div><div class="product-catalog-stock ${stockClass}">${availableQty!==null?`${availableQty} available`:'In Stock'}</div><div style="margin-top:15px;padding-top:15px;border-top:1px solid #dee2e6;"><div style="font-size:13px;color:#6c757d;"><strong>Materials:</strong><br>${product.ingredients.map(ing=>`${ing.itemName} (${ing.quantity} ${ing.unit})`).join(', ')}</div></div></div>`;}).join('');}
-        function filterCatalog(){const search=document.getElementById('catalog-search')?.value.toLowerCase();if(!search){renderCatalog();return;}const filtered=products.filter(p=>p.name.toLowerCase().includes(search)||(p.description&&p.description.toLowerCase().includes(search)));const container=document.getElementById('product-catalog-grid');if(filtered.length===0){container.innerHTML='<div class="empty-state"><h3>Not found</h3></div>';return;}container.innerHTML=filtered.map(product=>`<div class="product-catalog-card"><div class="product-catalog-name">${product.name}</div>${product.description?`<div style="color:#6c757d;margin:10px 0;">${product.description}</div>`:''}<div class="product-catalog-price">₱${product.sellingPrice.toFixed(2)}</div></div>`).join('');}
+        // PROFIT
+        function calculateProfit() {
+            const filter = document.getElementById('profit-filter')?.value || 'all';
+            const filteredSales = filterByPeriod(sales, filter);
+            const filteredExpenses = filterByPeriod(expenses, filter);
+            
+            const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+            const totalCost = filteredSales.reduce((sum, sale) => sum + sale.totalCost, 0);
+            const totalExpenses = filteredExpenses.reduce((sum, exp) => sum + exp.cost, 0);
+            const grossProfit = totalRevenue - totalCost;
+            const netProfit = totalRevenue - totalCost;
+            const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
+            
+            const summaryContainer = document.getElementById('profit-summary');
+            if (summaryContainer) {
+                summaryContainer.innerHTML = `<div class="stats-grid"><div class="stat-card success"><div class="stat-value">₱${totalRevenue.toFixed(2)}</div><div class="stat-label">Total Revenue</div></div><div class="stat-card danger"><div class="stat-value">₱${totalCost.toFixed(2)}</div><div class="stat-label">Product Costs</div></div><div class="stat-card warning"><div class="stat-value">₱${totalExpenses.toFixed(2)}</div><div class="stat-label">Total Expenses</div></div><div class="stat-card ${grossProfit >= 0 ? 'success' : 'danger'}"><div class="stat-value">₱${grossProfit.toFixed(2)}</div><div class="stat-label">Gross Profit</div></div></div><div class="profit-card"><h3>Net Profit (${filter})</h3><div class="profit-value">₱${netProfit.toFixed(2)}</div><div style="font-size:1.2em;">Profit Margin: ${profitMargin.toFixed(2)}% | Total Sales: ${filteredSales.length}</div></div>`;
+            }
+            
+            const productBreakdown = {};
+            filteredSales.forEach(sale => {
+                if (!productBreakdown[sale.productName]) {
+                    productBreakdown[sale.productName] = {quantity: 0, revenue: 0, cost: 0, profit: 0};
+                }
+                productBreakdown[sale.productName].quantity += sale.quantity;
+                productBreakdown[sale.productName].revenue += sale.totalRevenue;
+                productBreakdown[sale.productName].cost += sale.totalCost;
+                productBreakdown[sale.productName].profit += sale.profit;
+            });
+            
+            const detailsContainer = document.getElementById('profit-details');
+            if (detailsContainer) {
+                detailsContainer.innerHTML = `<h3 style="margin-top:30px;">Profit by Product</h3><div class="table-container"><table><thead><tr><th>Product</th><th>Units Sold</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead><tbody>${Object.entries(productBreakdown).map(([name, data]) => `<tr><td><strong>${name}</strong></td><td>${data.quantity}</td><td>₱${data.revenue.toFixed(2)}</td><td>₱${data.cost.toFixed(2)}</td><td style="color:${data.profit >= 0 ? '#28a745' : '#dc3545'}"><strong>₱${data.profit.toFixed(2)}</strong></td><td>${((data.profit / data.revenue) * 100).toFixed(1)}%</td></tr>`).join('')}</tbody></table></div>`;
+            }
+        }
 
-        function updateDashboard(){const mySales=sales.filter(s=>s.soldBy===currentUser.username);const myEarnings=mySales.reduce((sum,s)=>sum+s.userEarnings,0);const totalSales=mySales.length;const myProducts=products.filter(p=>p.createdBy===currentUser.username).length;const statsContainer=document.getElementById('dashboard-stats');if(statsContainer){statsContainer.innerHTML=`<div class="stat-card success"><div class="stat-value">₱${myEarnings.toFixed(2)}</div><div class="stat-label">My Earnings</div></div><div class="stat-card info"><div class="stat-value">${totalSales}</div><div class="stat-label">My Sales</div></div><div class="stat-card"><div class="stat-value">${myProducts}</div><div class="stat-label">My Products</div></div><div class="stat-card warning"><div class="stat-value">${products.length}</div><div class="stat-label">Total Products</div></div>`;}const activityContainer=document.getElementById('recent-activity');if(activityContainer){const recentSales=mySales.slice(-5).reverse();if(recentSales.length===0){activityContainer.innerHTML='<div class="empty-state"><h3>No activity</h3></div>';}else{activityContainer.innerHTML=recentSales.map(sale=>`<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;">${new Date(sale.date).toLocaleDateString()}</div></div><div class="item-price">₱${sale.userEarnings.toFixed(2)}</div></div></div>`).join('');}}}
+        // LABOR
+        function calculateLabor() {
+            const filter = document.getElementById('labor-filter')?.value || 'all';
+            const filteredSales = filterByPeriod(sales, filter);
+            
+            const totalLabor = filteredSales.reduce((sum, sale) => sum + sale.laborCost, 0);
+            const totalSales = filteredSales.length;
+            const averageLabor = totalSales > 0 ? totalLabor / totalSales : 0;
+            
+            const summaryContainer = document.getElementById('labor-summary');
+            if (summaryContainer) {
+                summaryContainer.innerHTML = `<div class="stats-grid"><div class="stat-card info"><div class="stat-value">₱${totalLabor.toFixed(2)}</div><div class="stat-label">Total Labor Earned</div></div><div class="stat-card"><div class="stat-value">${totalSales}</div><div class="stat-label">Products Sold</div></div><div class="stat-card warning"><div class="stat-value">₱${averageLabor.toFixed(2)}</div><div class="stat-label">Average Labor per Sale</div></div></div>`;
+            }
+            
+            const laborBreakdown = {};
+            filteredSales.forEach(sale => {
+                if (!laborBreakdown[sale.productName]) {
+                    laborBreakdown[sale.productName] = {count: 0, totalLabor: 0};
+                }
+                laborBreakdown[sale.productName].count += sale.quantity;
+                laborBreakdown[sale.productName].totalLabor += sale.laborCost;
+            });
+            
+            const detailsContainer = document.getElementById('labor-details');
+            if (detailsContainer) {
+                detailsContainer.innerHTML = `<h3 style="margin-top:30px;">Labor by Product</h3><div class="table-container"><table><thead><tr><th>Product</th><th>Units Produced</th><th>Total Labor</th><th>Labor per Unit</th></tr></thead><tbody>${Object.entries(laborBreakdown).map(([name, data]) => `<tr><td><strong>${name}</strong></td><td>${data.count}</td><td>₱${data.totalLabor.toFixed(2)}</td><td>₱${(data.totalLabor / data.count).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>`;
+            }
+        }
 
-        function switchTab(tabName){document.querySelectorAll('.tab').forEach(tab=>tab.classList.remove('active'));document.querySelectorAll('.tab-content').forEach(content=>content.classList.remove('active'));event.target.classList.add('active');document.getElementById(tabName+'-tab').classList.add('active');if(tabName==='earnings')calculateEarnings();if(tabName==='dashboard')updateDashboard();if(tabName==='inventory')renderInventory();}
-        function updateAllDropdowns(){const saleSelect=document.getElementById('sale-product');if(saleSelect){saleSelect.innerHTML='<option value="">Choose...</option>'+products.map(p=>`<option value="${p.id}">${p.name} - ₱${p.sellingPrice.toFixed(2)}</option>`).join('');}}
-        function filterByPeriod(data,period){const now=new Date();const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());return data.filter(item=>{const itemDate=new Date(item.date);switch(period){case 'today':return itemDate>=today;case 'week':const weekAgo=new Date(today);weekAgo.setDate(weekAgo.getDate()-7);return itemDate>=weekAgo;case 'month':const monthAgo=new Date(today);monthAgo.setMonth(monthAgo.getMonth()-1);return itemDate>=monthAgo;default:return true;}});}
-        function renderAll(){renderItems();renderProducts();renderSales();renderInventory();updateAllDropdowns();}
+        // INVENTORY
+        function updateInventory() {
+            const inventory = {};
+            
+            expenses.forEach(expense => {
+                if (!inventory[expense.itemId]) {
+                    const item = items.find(i => i.id === expense.itemId);
+                    inventory[expense.itemId] = {name: expense.itemName, unit: expense.itemUnit, purchased: 0, used: 0, remaining: 0, totalCost: 0, lowStock: item?.lowStock || 0};
+                }
+                inventory[expense.itemId].purchased += expense.quantity;
+                inventory[expense.itemId].totalCost += expense.cost;
+            });
+            
+            sales.forEach(sale => {
+                const product = products.find(p => p.id === sale.productId);
+                if (product) {
+                    product.ingredients.forEach(ing => {
+                        if (inventory[ing.itemId]) {
+                            inventory[ing.itemId].used += ing.quantity * sale.quantity;
+                        }
+                    });
+                }
+            });
+            
+            Object.values(inventory).forEach(item => {
+                item.remaining = item.purchased - item.used;
+            });
+            
+            const container = document.getElementById('inventory-list');
+            if (!container) return;
+            
+            if (Object.keys(inventory).length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No inventory data</h3><p>Record expenses to see inventory levels</p></div>';
+                return;
+            }
+            
+            container.innerHTML = Object.values(inventory).map(item => `<div class="item-card"><div class="item-header"><div><div class="item-name">${item.name}</div><div style="color:#6c757d;font-size:14px;margin-top:5px;">Purchased: ${item.purchased.toFixed(2)} ${item.unit} | Used: ${item.used.toFixed(2)} ${item.unit}</div><div class="stock-status ${item.remaining <= item.lowStock && item.lowStock > 0 ? 'stock-low' : ''}">${item.remaining <= item.lowStock && item.lowStock > 0 ? '⚠️ Low Stock Alert!' : ''}</div></div><div><div class="item-price">${item.remaining.toFixed(2)} ${item.unit}</div><div style="text-align:right;font-size:14px;color:#6c757d;margin-top:5px;">Value: ₱${item.totalCost.toFixed(2)}</div></div></div></div>`).join('');
+        }
+
+        // REPORTS
+        function updateReports() {
+            document.getElementById('report-total-items').textContent = items.length;
+            document.getElementById('report-total-products').textContent = products.length;
+            
+            const totalExpenses = expenses.reduce((sum, exp) => sum + exp.cost, 0);
+            document.getElementById('report-total-expenses').textContent = '₱' + totalExpenses.toFixed(2);
+            
+            const totalSales = sales.reduce((sum, sale) => sum + sale.totalRevenue, 0);
+            document.getElementById('report-total-sales').textContent = '₱' + totalSales.toFixed(2);
+        }
+
+        // DASHBOARD
+        function updateDashboard() {
+            const mySales = sales.filter(s => s.soldBy === currentUser.username);
+            const myEarnings = mySales.reduce((sum, s) => sum + s.userEarnings, 0);
+            const totalSales = mySales.length;
+            const myProducts = products.filter(p => p.createdBy === currentUser.username).length;
+            
+            const statsContainer = document.getElementById('dashboard-stats');
+            if (statsContainer) {
+                statsContainer.innerHTML = `<div class="stat-card success"><div class="stat-value">₱${myEarnings.toFixed(2)}</div><div class="stat-label">My Earnings</div></div><div class="stat-card info"><div class="stat-value">${totalSales}</div><div class="stat-label">My Sales</div></div><div class="stat-card"><div class="stat-value">${myProducts}</div><div class="stat-label">My Products</div></div><div class="stat-card warning"><div class="stat-value">${products.length}</div><div class="stat-label">Total Products</div></div>`;
+            }
+            
+            const activityContainer = document.getElementById('recent-activity');
+            if (activityContainer) {
+                const recentSales = mySales.slice(-5).reverse();
+                if (recentSales.length === 0) {
+                    activityContainer.innerHTML = '<div class="empty-state"><h3>No recent activity</h3></div>';
+                } else {
+                    activityContainer.innerHTML = recentSales.map(sale => `<div class="sale-card"><div class="item-header"><div><div class="item-name">${sale.productName} x${sale.quantity}</div><div style="color:#6c757d;font-size:14px;">${new Date(sale.date).toLocaleDateString()}</div></div><div class="item-price">₱${sale.userEarnings.toFixed(2)}</div></div></div>`).join('');
+                }
+            }
+        }
+
+        // CATALOG
+        function renderCatalog() {
+            const container = document.getElementById('product-catalog-grid');
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No products available</h3></div>';
+                return;
+            }
+            
+            container.innerHTML = products.map(product => {
+                const availableQty = items.reduce((total, item) => {
+                    const ingredient = product.ingredients.find(ing => ing.itemId === item.id);
+                    if (ingredient) {
+                        const maxUnits = Math.floor(item.quantity / ingredient.quantity);
+                        return total === null ? maxUnits : Math.min(total, maxUnits);
+                    }
+                    return total;
+                }, null);
+                
+                const stockClass = availableQty <= 5 ? 'low' : '';
+                
+                return `<div class="product-catalog-card"><div class="product-catalog-name">${product.name}</div>${product.description ? `<div style="color:#6c757d;margin:10px 0;">${product.description}</div>` : ''}<div class="product-catalog-price">₱${product.sellingPrice.toFixed(2)}</div><div class="product-catalog-stock ${stockClass}">${availableQty !== null ? `${availableQty} available` : 'In Stock'}</div><div style="margin-top:15px;padding-top:15px;border-top:1px solid #dee2e6;"><div style="font-size:13px;color:#6c757d;"><strong>Materials:</strong><br>${product.ingredients.map(ing => `${ing.itemName} (${ing.quantity} ${ing.unit})`).join(', ')}</div></div></div>`;
+            }).join('');
+        }
+        
+        function filterCatalog() {
+            const search = document.getElementById('catalog-search')?.value.toLowerCase();
+            if (!search) {
+                renderCatalog();
+                return;
+            }
+            
+            const filtered = products.filter(p => p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search)));
+            const container = document.getElementById('product-catalog-grid');
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h3>No products found</h3></div>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(product => `<div class="product-catalog-card"><div class="product-catalog-name">${product.name}</div>${product.description ? `<div style="color:#6c757d;margin:10px 0;">${product.description}</div>` : ''}<div class="product-catalog-price">₱${product.sellingPrice.toFixed(2)}</div></div>`).join('');
+        }
+
+        // UTILS
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            if (tabName === 'earnings') calculateEarnings();
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'profit') calculateProfit();
+            if (tabName === 'labor') calculateLabor();
+            if (tabName === 'inventory') updateInventory();
+            if (tabName === 'reports') updateReports();
+        }
+        
+        function updateAllDropdowns() {
+            const expenseSelect = document.getElementById('expense-item');
+            if (expenseSelect) {
+                expenseSelect.innerHTML = '<option value="">Choose an item...</option>' + items.map(item => `<option value="${item.id}">${item.name} (${item.unit})</option>`).join('');
+            }
+            
+            const saleSelect = document.getElementById('sale-product');
+            if (saleSelect) {
+                saleSelect.innerHTML = '<option value="">Choose...</option>' + products.map(p => `<option value="${p.id}">${p.name} - ₱${p.sellingPrice.toFixed(2)}</option>`).join('');
+            }
+        }
+        
+        function filterByPeriod(data, period) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            return data.filter(item => {
+                const itemDate = new Date(item.date);
+                switch (period) {
+                    case 'today':
+                        return itemDate >= today;
+                    case 'week':
+                        const weekAgo = new Date(today);
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return itemDate >= weekAgo;
+                    case 'month':
+                        const monthAgo = new Date(today);
+                        monthAgo.setMonth(monthAgo.getMonth() - 1);
+                        return itemDate >= monthAgo;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        function exportData() {
+            const data = {items, expenses, products, sales, exportDate: new Date().toISOString()};
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `business-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm('This will replace all existing data. Continue?')) {
+                        items = data.items || [];
+                        expenses = data.expenses || [];
+                        products = data.products || [];
+                        sales = data.sales || [];
+                        
+                        saveLocal();
+                        renderAll();
+                        updateSKUFields();
+                        calculateProfit();
+                        calculateLabor();
+                        updateInventory();
+                        updateReports();
+                        alert('Data imported successfully!');
+                    }
+                } catch (error) {
+                    alert('Error importing data. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function renderAll() {
+            renderItems();
+            renderProducts();
+            renderSales();
+            renderExpenses();
+            renderInventory();
+            updateAllDropdowns();
+        }
     </script>
 </body>
 </html>
