@@ -524,7 +524,23 @@
         document.addEventListener('DOMContentLoaded',()=>{
             // Make sure users are initialized
             users = initializeDefaultUsers();
-            loadFirebaseConfig();
+            
+            // Auto-configure Firebase if not already configured
+            const existingConfig = localStorage.getItem('firebaseConfig');
+            if (!existingConfig) {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyBXxxbX2NjGTJFQARUsNbMZzdhFri5Gl8c",
+                    authDomain: "a-k-creations-1a596.firebaseapp.com",
+                    projectId: "a-k-creations-1a596",
+                    storageBucket: "a-k-creations-1a596.firebasestorage.app",
+                    messagingSenderId: "328290107354",
+                    appId: "1:328290107354:web:df31cf20581b196a7f0ae3"
+                };
+                localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+                initializeFirebase(firebaseConfig);
+            } else {
+                loadFirebaseConfig();
+            }
             checkSession();
             document.getElementById('sale-date').valueAsDate=new Date();
         });
